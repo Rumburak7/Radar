@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar Samolotów</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1410">
+<style>
+  :root{--bg:#0b1410;--pan:#122019;--ramka:#1f3a2c;--tekst:#e4f2ea;--szary:#86a394;--ziel:#2fd47a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tekst);font-family:"Segoe UI",Roboto,Arial,sans-serif}
+  header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding:14px 18px 6px}
+  h1{margin:0;font-size:22px}h1 span{color:var(--ziel)}
+  header small{color:var(--szary)}
+  .uk{display:grid;grid-template-columns:minmax(300px,520px) 1fr;gap:18px;padding:8px 18px 20px}
+  @media(max-width:860px){.uk{grid-template-columns:1fr}}
+  .k{background:var(--pan);border:1px solid var(--ramka);border-radius:14px;padding:12px}
+  canvas{width:100%;aspect-ratio:1;display:block}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--ramka)}
+  th{color:var(--szary);font-weight:600;font-size:13px}
+  td a{color:#7cc8ff;text-decoration:none;font-weight:700}
+  .kr{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+  .gora{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .gora a,.gora button{background:#1d3a2b;color:var(--tekst);border:1px solid var(--ramka);border-radius:9px;padding:7px 12px;text-decoration:none;font-size:14px;cursor:pointer}
+  #stan{color:var(--szary);font-size:13px}
+  footer{color:var(--szary);font-size:12px;padding:0 18px 18px}
+  tbody tr{cursor:pointer} tbody tr:hover{background:#18301f} tbody tr.wyb{background:#1f4a30}
+  #szcz{display:none;gap:16px;align-items:flex-start;background:#0e1a14;border:1px solid var(--ramka);border-radius:12px;padding:12px;margin-bottom:12px}
+  #szcz .fot{width:340px;max-width:45%;aspect-ratio:3/2;border-radius:9px;background:#08110c center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--szary);font-size:13px;text-align:center;flex-shrink:0}
+  #szcz h2{margin:0 0 4px;font-size:22px;color:#7cc8ff} #szcz .op{color:var(--tekst);font-size:16px;margin-bottom:8px}
+  #szcz .dane{display:grid;grid-template-columns:auto 1fr;gap:3px 14px;font-size:14px} #szcz .dane b{color:var(--szary);font-weight:600}
+  #szcz .autor{font-size:11px;color:var(--szary);margin-top:6px} #szcz .autor a{color:var(--szary)}
+  #szcz .przyc{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  #szcz .przyc a,#szcz .przyc button{background:#1d3a2b;color:var(--tekst);border:1px solid var(--ramka);border-radius:9px;padding:6px 11px;text-decoration:none;font-size:13px;cursor:pointer}
+  #wlasne{margin-top:8px;font-size:13px;color:var(--szary)} #wlasne button,#wlasne label.pr{background:#24402f;color:var(--tekst);border:1px solid var(--ramka);border-radius:8px;padding:5px 10px;font-size:13px;cursor:pointer;display:inline-block}
+  #wPanel{display:none;margin-top:8px;padding:8px;border:1px dashed var(--ramka);border-radius:9px} #wPanel label{margin-right:12px;cursor:pointer}
+  #mojeZdj summary{cursor:pointer;color:var(--tekst)} #mojeZdj .siatka{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+  #mojeZdj .z{width:150px;font-size:12px} #mojeZdj .z img{width:150px;height:100px;object-fit:cover;border-radius:7px;display:block;margin-bottom:3px} #mojeZdj a{color:#7cc8ff}
+  @media(max-width:600px){#szcz{flex-direction:column}#szcz .fot{width:100%;max-width:100%}}
+</style>
+<style>
+  dialog{background:#122019;color:var(--tekst);border:1px solid var(--ramka);border-radius:14px;max-width:460px;width:92vw;padding:16px}
+  dialog::backdrop{background:#000a}
+  dialog h3{margin:0 0 10px} dialog label.t{display:block;font-size:13px;color:var(--szary);margin-top:10px}
+  dialog input[type=text],dialog select{width:100%;padding:8px;border-radius:8px;border:1px solid var(--ramka);background:#0b1410;color:var(--tekst);font-size:15px;margin-top:3px}
+  dialog .rz{display:flex;gap:8px} dialog .rz>*{flex:1}
+  dialog button{background:#1d3a2b;color:var(--tekst);border:1px solid var(--ramka);border-radius:9px;padding:8px 12px;font-size:14px;cursor:pointer}
+  dialog button.gl{background:#1f9a6a;border-color:#1f9a6a;font-weight:bold}
+  dialog small{color:var(--szary)} .przyciski{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+  #polacz{display:none}
+</style>
+</head>
+<body>
+<header><h1>🛩 Radar <span>samolotów</span></h1><small>autor Adam Bryks 2026</small></header>
+<div class="uk">
+  <div class="k"><canvas id="rad" width="800" height="800"></canvas></div>
+  <div class="k">
+    <div class="gora"><b id="ile">–</b><span id="stan"></span><span style="flex:1"></span><button id="obrBtn" onclick="przelaczObrot()"></button><button onclick="otworzUst()">⚙ Ustawienia</button></div>
+    <div id="szcz"><div class="fot" id="fot">ładuję zdjęcie…</div><div style="flex:1;min-width:0">
+      <h2 id="sLot"></h2><div class="op" id="sOp"></div><div class="dane" id="sDane"></div><div class="autor" id="sAutor"></div>
+      <div id="wlasne"><button onclick="pokazPanel()">📷 Wstaw własne zdjęcie</button> <button id="wUsun" style="display:none" onclick="usunWlasne()">🗑 Usuń moje zdjęcie</button>
+        <div id="wPanel"><label><input type="radio" name="wDla" value="sam" checked> tylko ten samolot</label><label><input type="radio" name="wDla" value="typ"> <span id="wTyp">wszystkie tego typu</span></label><br>
+          <label class="pr" style="margin-top:8px">📁 Wybierz zdjęcie… <input type="file" id="wPlik" accept="image/*" style="display:none" onchange="wyslijWlasne(this)"></label> <span id="wStan"></span></div></div>
+      <div class="przyc"><a id="sMapa" target="_blank" rel="noopener">🗺 Trasa na mapie (adsb.fi)</a><a id="sFr" target="_blank" rel="noopener">🛩 Flightradar24</a><button onclick="zamknij()">✕ Zamknij</button></div></div></div>
+    <table><thead><tr><th>Lot</th><th>Typ</th><th>Wysokość</th><th>Prędkość</th><th>Kurs</th><th>Odległość</th></tr></thead><tbody id="lista"></tbody></table>
+  </div>
+</div>
+<footer><details id="mojeZdj"><summary>📷 Moje zdjęcia samolotów: <span id="mzIle">0</span> · <span id="mzGdzie">…</span></summary>
+<p><button id="polacz" onclick="polaczFolder()">🔓 Połącz z folderem zdjęć</button></p><div class="siatka" id="mzLista"></div></details>
+Kolory: <span class="kr" style="background:#ff8c00"></span>poniżej 3000 m · <span class="kr" style="background:#ffe600"></span>3000–8000 m · <span class="kr" style="background:#50c8ff"></span>wyżej · <span class="kr" style="background:#999"></span>na ziemi. Kliknij samolot (w tabeli albo na radarze) = zdjęcie i szczegóły.
+Dane: <a href="https://adsb.fi" target="_blank" rel="noopener" style="color:inherit">adsb.fi</a> (zapasowo <a href="https://adsb.lol" target="_blank" rel="noopener" style="color:inherit">adsb.lol</a>) · zdjęcia: planespotters.net · typy: hexdb.io</footer>
+
+<dialog id="ust">
+  <h3>⚙ Ustawienia radaru</h3>
+  <small>Ustawienia zapamiętuje ta przeglądarka (na laptopie i telefonie ustawiasz osobno).</small>
+  <label class="t">Położenie (środek radaru)</label>
+  <div class="rz"><input type="text" id="uLat" placeholder="lat, np. 48.35" inputmode="decimal"><input type="text" id="uLon" placeholder="lon, np. 8.06" inputmode="decimal"></div>
+  <p><button onclick="zGps()">📍 Weź moją pozycję z GPS</button> <small id="gpsStan"></small></p>
+  <label><input type="checkbox" id="uSledz"> Zawsze moja aktualna pozycja (GPS) – radar jedzie ze mną, np. w telefonie w drodze</label>
+  <label class="t">Zasięg</label>
+  <select id="uZas"></select>
+  <label class="t">Kierunek ekranu (która strona świata jest u góry, gdy patrzysz na radar)</label>
+  <select id="uObr"></select>
+  <label class="t">Moje zdjęcia samolotów</label>
+  <p style="margin:4px 0"><button id="uFolderBtn" onclick="wybierzFolder()">📁 Wybierz folder (np. w OneDrive)</button><br><small id="uFolder"></small></p>
+  <div class="przyciski"><button onclick="document.getElementById('ust').close()">Anuluj</button><button class="gl" onclick="zapiszUst()">Zapisz</button></div>
+</dialog>
+
+<script>
+const cv = document.getElementById('rad'), cx = cv.getContext('2d');
+let dane = null, czasDanych = 0, kat = 0, wybrany = '', pozycje = [];
+let fotoCache = {}, moje = new Set();
+const czysta = n => (n || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
+const nazwaTyp = t => 't_' + czysta(t);
+
+// ---------- ustawienia (pamieta przegladarka) ----------
+const ZASIEGI = [10, 25, 50, 100, 150, 250];
+const KIER = ['N - północ (normalnie)', 'NNE', 'NE - północny wschód', 'ENE', 'E - wschód', 'ESE', 'SE - południowy wschód', 'SSE',
+              'S - południe', 'SSW', 'SW - południowy zachód', 'WSW', 'W - zachód', 'WNW', 'NW - północny zachód', 'NNW'];
+let ust = { lat: null, lon: null, zas: 50, obr: 0, sledz: false };
+try { Object.assign(ust, JSON.parse(localStorage.getItem('radarGH') || '{}')); } catch (e) {}
+function zapiszPamiec(){ try { localStorage.setItem('radarGH', JSON.stringify(ust)); } catch (e) {} }
+let obracaj = true; try { obracaj = localStorage.getItem('radarObrot') !== 'nie'; } catch (e) {}
+function opisObrotu(){ document.getElementById('obrBtn').textContent = obracaj ? '🧭 Jak na biurku' : '🧭 Północ u góry'; }
+function przelaczObrot(){ obracaj = !obracaj; try { localStorage.setItem('radarObrot', obracaj ? 'tak' : 'nie'); } catch (e) {} opisObrotu(); }
+function otworzUst(){
+  document.getElementById('uLat').value = ust.lat ?? ''; document.getElementById('uLon').value = ust.lon ?? '';
+  document.getElementById('uSledz').checked = !!ust.sledz;
+  document.getElementById('uZas').innerHTML = ZASIEGI.map(z => `<option value="${z}"${z == ust.zas ? ' selected' : ''}>${z} km</option>`).join('');
+  document.getElementById('uObr').innerHTML = KIER.map((k, i) => { const st = Math.floor(i * 22.5); return `<option value="${st}"${Math.abs(st - ust.obr) < 12 ? ' selected' : ''}>${k} (${st}°)</option>`; }).join('');
+  opisFolderu(); document.getElementById('gpsStan').textContent = '';
+  document.getElementById('ust').showModal();
+}
+function zapiszUst(){
+  const la = parseFloat(document.getElementById('uLat').value.replace(',', '.')), lo = parseFloat(document.getElementById('uLon').value.replace(',', '.'));
+  if (la > -90 && la < 90 && lo > -180 && lo < 180) { ust.lat = +la.toFixed(4); ust.lon = +lo.toFixed(4); }
+  ust.sledz = document.getElementById('uSledz').checked;
+  ust.zas = +document.getElementById('uZas').value; ust.obr = +document.getElementById('uObr').value;
+  zapiszPamiec(); document.getElementById('ust').close(); pobierz();
+}
+function gps(){ return new Promise((ok, zle) => { if (!navigator.geolocation) return zle(new Error('brak GPS'));
+  navigator.geolocation.getCurrentPosition(p => ok(p.coords), e => zle(e), { enableHighAccuracy: false, maximumAge: 60000, timeout: 15000 }); }); }
+async function zGps(){
+  const st = document.getElementById('gpsStan'); st.textContent = 'szukam…';
+  try { const c = await gps(); document.getElementById('uLat').value = c.latitude.toFixed(4); document.getElementById('uLon').value = c.longitude.toFixed(4); st.textContent = '✔'; }
+  catch (e) { st.textContent = '⚠ nie udało się (zezwól na lokalizację)'; }
+}
+
+// ---------- moje zdjecia: folder (np. OneDrive) albo pamiec przegladarki ----------
+let folder = null;                       // uchwyt do folderu na dysku
+const urlCache = {};
+function bazaIDB(){ return new Promise((ok, zle) => { const r = indexedDB.open('radar_gh', 1);
+  r.onupgradeneeded = () => { r.result.createObjectStore('zdj'); r.result.createObjectStore('ust'); };
+  r.onsuccess = () => ok(r.result); r.onerror = () => zle(r.error); }); }
+async function idb(sklep, tryb, f){ const db = await bazaIDB(); return new Promise((ok, zle) => {
+  const tx = db.transaction(sklep, tryb), st = tx.objectStore(sklep), r = f(st); tx.oncomplete = () => ok(r && r.result); tx.onerror = () => zle(tx.error); }); }
+async function zaladujFolder(){
+  try { const h = await idb('ust', 'readonly', s => s.get('folder')); if (!h) return;
+    if (await h.queryPermission({ mode: 'readwrite' }) === 'granted') folder = h;
+    else { folder = null; document.getElementById('polacz').style.display = 'inline-block'; document.getElementById('polacz').dataset.n = h.name; }
+  } catch (e) {}
+}
+async function polaczFolder(){
+  try { const h = await idb('ust', 'readonly', s => s.get('folder'));
+    if (h && await h.requestPermission({ mode: 'readwrite' }) === 'granted') { folder = h; document.getElementById('polacz').style.display = 'none'; odswiezZdjecia(); }
+  } catch (e) {}
+}
+async function wybierzFolder(){
+  if (!window.showDirectoryPicker) { alert('Ta przeglądarka nie umie wybrać folderu (np. telefon). Zdjęcia zostają w pamięci przeglądarki.'); return; }
+  try { const h = await window.showDirectoryPicker({ id: 'radar_zdjecia', mode: 'readwrite' });
+    await idb('ust', 'readwrite', s => s.put(h, 'folder')); folder = h;
+    document.getElementById('polacz').style.display = 'none'; opisFolderu(); odswiezZdjecia();
+  } catch (e) {}
+}
+function opisFolderu(){
+  const t = folder ? '✔ zapis do folderu: ' + folder.name : window.showDirectoryPicker ? 'teraz: w pamięci tej przeglądarki' : 'ta przeglądarka zapisuje zdjęcia tylko u siebie';
+  const el = document.getElementById('uFolder'); if (el) el.textContent = t;
+  document.getElementById('uFolderBtn').style.display = window.showDirectoryPicker ? '' : 'none';
+}
+async function listaZdj(){
+  const w = [];
+  if (folder) { for await (const [n, h] of folder.entries()) if (h.kind === 'file' && /^z_[a-z0-9_]+\.jpg$/.test(n)) { const f = await h.getFile(); w.push({ n: n.slice(2, -4), kb: Math.ceil(f.size / 1024) }); } }
+  else { const klucze = await idb('zdj', 'readonly', s => s.getAllKeys()) || []; for (const k of klucze) { const b = await idb('zdj', 'readonly', s => s.get(k)); w.push({ n: k, kb: Math.ceil(b.size / 1024) }); } }
+  return w.sort((a, b) => a.n.localeCompare(b.n));
+}
+async function urlZdj(n){
+  if (urlCache[n]) return urlCache[n];
+  let b = null;
+  try { if (folder) b = await (await folder.getFileHandle('z_' + n + '.jpg')).getFile(); else b = await idb('zdj', 'readonly', s => s.get(n)); } catch (e) {}
+  return b ? (urlCache[n] = URL.createObjectURL(b)) : null;
+}
+async function zapiszZdj(n, blob){
+  if (folder) { const w = await (await folder.getFileHandle('z_' + n + '.jpg', { create: true })).createWritable(); await w.write(blob); await w.close(); }
+  else await idb('zdj', 'readwrite', s => s.put(blob, n));
+}
+async function usunZdj(n){
+  try { if (folder) await folder.removeEntry('z_' + n + '.jpg'); else await idb('zdj', 'readwrite', s => s.delete(n)); } catch (e) {}
+}
+async function wczytajMoje(){
+  try {
+    const pl = await listaZdj(); moje = new Set(pl.map(p => p.n));
+    document.getElementById('mzIle').textContent = pl.length;
+    document.getElementById('mzGdzie').textContent = folder ? '📁 folder „' + folder.name + '”' : '💾 w pamięci przeglądarki';
+    const html = [];
+    for (const p of pl) { const u = await urlZdj(p.n);
+      html.push(`<div class="z"><img src="${u}" loading="lazy">${p.n.startsWith('t_') ? 'typ ' + p.n.slice(2).toUpperCase() : p.n.toUpperCase()} · ${p.kb} KB<br><a href="${u}" download="z_${p.n}.jpg">pobierz</a> · <a href="#" onclick="usunPlik('${p.n}');return false">usuń</a></div>`); }
+    document.getElementById('mzLista').innerHTML = html.join('') || 'Jeszcze nie ma żadnych.';
+  } catch (e) {}
+}
+function pokazPanel(){ const p = document.getElementById('wPanel'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; }
+async function wyslijWlasne(inp){
+  const plik = inp.files[0]; inp.value = ''; if (!plik || !wybrany) return;
+  const s = dane.samoloty.find(x => x.hex === wybrany); if (!s) return;
+  const dla = document.querySelector('input[name=wDla]:checked').value;
+  const nazwa = dla === 'typ' && s.typ ? nazwaTyp(s.typ) : czysta(s.hex);
+  const st = document.getElementById('wStan'); st.textContent = 'zmniejszam…';
+  try {
+    const bmp = await createImageBitmap(plik); const sk = Math.min(1, 800 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * sk); c.height = Math.round(bmp.height * sk);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    await zapiszZdj(nazwa, blob);
+    delete urlCache[nazwa]; document.getElementById('wPanel').style.display = 'none';
+    odswiezZdjecia();
+  } catch (e) { st.textContent = '⚠ ' + (e.message || 'nie udało się'); }
+}
+async function usunPlik(n){ await usunZdj(n); delete urlCache[n]; odswiezZdjecia(); }
+function usunWlasne(){ const f = fotoCache[wybrany]; if (f && f.wlasne) usunPlik(f.wlasne); }
+async function odswiezZdjecia(){ fotoCache = {}; await wczytajMoje(); document.getElementById('fot').dataset.hex = ''; pokazSzczegoly(); }
+
+// pelne nazwy najczestszych typow (kod ICAO -> nazwa)
+const TYPY = {A318:'Airbus A318',A319:'Airbus A319',A320:'Airbus A320',A321:'Airbus A321',A19N:'Airbus A319neo',A20N:'Airbus A320neo',A21N:'Airbus A321neo',
+ A332:'Airbus A330-200',A333:'Airbus A330-300',A338:'Airbus A330-800neo',A339:'Airbus A330-900neo',A343:'Airbus A340-300',A346:'Airbus A340-600',A359:'Airbus A350-900',A35K:'Airbus A350-1000',A388:'Airbus A380',
+ BCS1:'Airbus A220-100',BCS3:'Airbus A220-300',B737:'Boeing 737-700',B738:'Boeing 737-800',B739:'Boeing 737-900',B38M:'Boeing 737 MAX 8',B39M:'Boeing 737 MAX 9',B752:'Boeing 757-200',B763:'Boeing 767-300',
+ B772:'Boeing 777-200',B77W:'Boeing 777-300ER',B77L:'Boeing 777-200LR',B788:'Boeing 787-8',B789:'Boeing 787-9',B78X:'Boeing 787-10',B744:'Boeing 747-400',B748:'Boeing 747-8',
+ E170:'Embraer 170',E175:'Embraer 175',E190:'Embraer 190',E195:'Embraer 195',E290:'Embraer E190-E2',E295:'Embraer E195-E2',CRJ7:'Bombardier CRJ700',CRJ9:'Bombardier CRJ900',CRJX:'Bombardier CRJ1000',
+ AT72:'ATR 72',AT75:'ATR 72-500',AT76:'ATR 72-600',AT45:'ATR 42-500',AT46:'ATR 42-600',DH8D:'De Havilland Dash 8-400',
+ BE9L:'Beechcraft King Air 90',BE20:'Beechcraft King Air 200',B190:'Beechcraft 1900',C172:'Cessna 172',C152:'Cessna 152',C182:'Cessna 182',C510:'Cessna Citation Mustang',C56X:'Cessna Citation Excel',C68A:'Cessna Citation Latitude',
+ PC12:'Pilatus PC-12',PC24:'Pilatus PC-24',SR22:'Cirrus SR22',S22T:'Cirrus SR22T',SR20:'Cirrus SR20',SF50:'Cirrus Vision Jet',C25A:'Cessna Citation CJ2',C25B:'Cessna Citation CJ3',C25C:'Cessna Citation CJ4',C525:'Cessna CitationJet',C208:'Cessna Caravan',L410:'Let L-410 Turbolet',P28A:'Piper PA-28',DA40:'Diamond DA40',DA42:'Diamond DA42',GLF6:'Gulfstream G650',CL35:'Bombardier Challenger 350',GL7T:'Bombardier Global 7500',
+ EC35:'Airbus H135 (śmigłowiec)',EC45:'Airbus H145 (śmigłowiec)',EC30:'Airbus H130 (śmigłowiec)',EC55:'Airbus H155 (śmigłowiec)',H160:'Airbus H160 (śmigłowiec)',A139:'AgustaWestland AW139 (śmigłowiec)',R44:'Robinson R44 (śmigłowiec)',R22:'Robinson R22 (śmigłowiec)',
+ A400:'Airbus A400M (wojskowy)',C130:'Lockheed C-130 Hercules',EUFI:'Eurofighter Typhoon',K35R:'Boeing KC-135',A310:'Airbus A310',MD11:'McDonnell Douglas MD-11'};
+// linie lotnicze (pierwsze 3 litery znaku lotu)
+const LINIE = {DLH:'Lufthansa',EWG:'Eurowings',CFG:'Condor',TUI:'TUIfly',RYR:'Ryanair',RUK:'Ryanair UK',MAY:'Malta Air (Ryanair)',WZZ:'Wizz Air',WMT:'Wizz Air Malta',EZY:'easyJet',EJU:'easyJet Europe',EZS:'easyJet Switzerland',
+ SWR:'Swiss',EDW:'Edelweiss',AUA:'Austrian',BAW:'British Airways',AFR:'Air France',KLM:'KLM',THY:'Turkish Airlines',PGT:'Pegasus',SXS:'SunExpress',LOT:'LOT Polskie Linie Lotnicze',ENT:'Enter Air',
+ UAE:'Emirates',QTR:'Qatar Airways',ETD:'Etihad',UAL:'United',DAL:'Delta',AAL:'American Airlines',ACA:'Air Canada',SAS:'SAS',FIN:'Finnair',IBE:'Iberia',VLG:'Vueling',TAP:'TAP Portugal',
+ ITY:'ITA Airways',AEE:'Aegean',BEL:'Brussels Airlines',CTN:'Croatia Airlines',ABR:'ASL Airlines',BCS:'DHL (EAT Leipzig)',DHK:'DHL',FDX:'FedEx',UPS:'UPS',GEC:'Lufthansa Cargo',CLH:'Lufthansa CityLine',
+ DLA:'Air Dolomiti',NJE:'NetJets',CHX:'Christoph (ratownictwo ADAC)',GAF:'Luftwaffe',MBU:'Marabu',HOP:'Air France Hop',TVS:'Smartwings',TVF:'Transavia France',TRA:'Transavia',BTI:'airBaltic',CAI:'Corendon',BPO:'Bundespolizei',CYP:'Cyprus Airways',HUM:'Polizei (śmigłowiec)',DRF:'DRF Luftrettung',AMB:'Ambulanz (lot sanitarny)',ADB:'ADAC Luftrettung',GAM:'Bundeswehr',LGL:'Luxair',WIF:'Widerøe',EIN:'Aer Lingus',NOZ:'Norwegian',ICE:'Icelandair',CSA:'Czech Airlines',ROT:'TAROM',BMS:'Blue Air',ELY:'El Al',MSR:'EgyptAir',RAM:'Royal Air Maroc',SVA:'Saudia',KAC:'Kuwait Airways',CPA:'Cathay Pacific',SIA:'Singapore Airlines',AIC:'Air India',CCA:'Air China',DHX:'DHL Aero Expreso',CLX:'Cargolux'};
+
+const nazwaTypu = (t, s) => TYPY[t] ? TYPY[t] + ' (' + t + ')' : s && s.nazwaDb ? s.nazwaDb + (t ? ' (' + t + ')' : '') : (t || 'typ nieznany');
+// v2.1: gdy dane z radaru nie maja typu albo rejestracji - pytamy baze hexdb.io po numerze nadajnika
+const hexInfo = {};
+const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function scal(s){ const i = hexInfo[czysta(s.hex)]; if (i && i.dane){ const d = i.dane;
+  if (!s.typ && d.typ) s.typ = d.typ; if (!s.rej && d.rej) s.rej = d.rej; if (d.nazwa) s.nazwaDb = d.nazwa; if (d.wl) s.wl = d.wl; } }
+function uzupelnij(s){
+  const h = czysta(s.hex);
+  if (!hexInfo[h]) hexInfo[h] = { p: (async () => {
+    try { const r = await fetch('https://hexdb.io/api/v2/aircraft/' + h); if (!r.ok) return;
+      const j = await r.json();
+      hexInfo[h].dane = { typ: j.icao_type_code || '', rej: j.registration || '', nazwa: [j.manufacturer, j.type].filter(Boolean).join(' '), wl: j.registered_owner || '' };
+    } catch (e) {} })() };
+  return hexInfo[h].p.then(() => scal(s));
+}
+
+const linia = l => LINIE[(l || '').slice(0, 3)] || '';
+function wybierz(hex){ wybrany = hex; pokazSzczegoly(); }
+function zamknij(){ wybrany = ''; document.getElementById('szcz').style.display = 'none'; document.querySelectorAll('tbody tr').forEach(t => t.classList.remove('wyb')); }
+async function zdjecie(s){
+  if (fotoCache[s.hex] !== undefined) return fotoCache[s.hex];
+  fotoCache[s.hex] = null;
+  const n = czysta(s.hex);
+  if (moje.has(n)) return fotoCache[s.hex] = { src: await urlZdj(n), autor: 'moje', wlasne: n };
+  const proby = ['https://api.planespotters.net/pub/photos/hex/' + s.hex];
+  if (s.rej) proby.push('https://api.planespotters.net/pub/photos/reg/' + encodeURIComponent(s.rej));
+  for (const u of proby){
+    try { const r = await fetch(u); const j = await r.json();
+      if (j.photos && j.photos.length){ const f = j.photos[0]; fotoCache[s.hex] = { src: (f.thumbnail_large || f.thumbnail).src, link: f.link, autor: f.photographer }; break; }
+    } catch (e) {}
+  }
+  if (!fotoCache[s.hex] && s.typ && moje.has(nazwaTyp(s.typ))) fotoCache[s.hex] = { src: await urlZdj(nazwaTyp(s.typ)), autor: 'moje (typ ' + s.typ + ')', wlasne: nazwaTyp(s.typ) };
+  return fotoCache[s.hex];
+}
+async function pokazSzczegoly(){
+  if (!wybrany || !dane) return;
+  const s = dane.samoloty.find(x => x.hex === wybrany);
+  if (!s){ zamknij(); return; }
+  if (!s.typ || !s.rej) await uzupelnij(s);
+  if (wybrany !== s.hex) return;
+  const box = document.getElementById('szcz'); box.style.display = 'flex';
+  document.querySelectorAll('tbody tr').forEach(t => t.classList.toggle('wyb', t.dataset.hex === wybrany));
+  document.getElementById('sLot').textContent = s.lot;
+  document.getElementById('sOp').textContent = [linia(s.lot), nazwaTypu(s.typ, s)].filter(Boolean).join(' · ');
+  document.getElementById('sDane').innerHTML =
+    `<b>Rejestracja</b><span>${esc(s.rej || '–')}</span>${s.wl ? `<b>Właściciel</b><span>${esc(s.wl)}</span>` : ''}<b>Wysokość</b><span>${s.ziemia ? 'na ziemi' : s.alt.toLocaleString('pl') + ' m'}</span>` +
+    `<b>Prędkość</b><span>${s.kmh} km/h</span><b>Kurs</b><span>${s.kurs}° ${strona(s.kurs)}</span><b>Odległość</b><span>${s.km.toFixed(1).replace('.', ',')} km</span>`;
+  document.getElementById('sFr').href = 'https://www.flightradar24.com/' + encodeURIComponent(s.lot);
+  // mapa adsb.fi szuka po numerze nadajnika (hex) - pokazuje kazdy lot, takze policje, wojsko i smiglowce
+  document.getElementById('sMapa').href = 'https://globe.adsb.fi/?icao=' + encodeURIComponent(s.hex.replace('~', '')) + '&zoom=10';
+  const fot = document.getElementById('fot'), au = document.getElementById('sAutor');
+  document.getElementById('wTyp').textContent = s.typ ? 'wszystkie typu ' + s.typ : 'wszystkie tego typu';
+  if (fot.dataset.hex !== s.hex){
+    document.getElementById('wPanel').style.display = 'none'; document.getElementById('wStan').textContent = '';
+    fot.dataset.hex = s.hex; fot.style.backgroundImage = ''; fot.textContent = 'ładuję zdjęcie…'; au.textContent = '';
+    const f = await zdjecie(s);
+    if (wybrany !== s.hex) return;
+    if (f){ fot.style.backgroundImage = `url("${f.src}")`; fot.textContent = '';
+      au.innerHTML = f.wlasne ? `Zdjęcie: ${f.autor}` : `Zdjęcie: © ${f.autor} · <a href="${f.link}" target="_blank" rel="noopener">planespotters.net</a>`; }
+    else fot.textContent = 'brak zdjęcia - możesz wstawić własne 👇';
+    document.getElementById('wUsun').style.display = f && f.wlasne ? 'inline-block' : 'none';
+  }
+}
+
+cv.addEventListener('click', e => {
+  const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * cv.width / r.width, y = (e.clientY - r.top) * cv.height / r.height;
+  let naj = null, nd = 40;
+  for (const p of pozycje){ const d = Math.hypot(p.x - x, p.y - y); if (d < nd){ nd = d; naj = p.hex; } }
+  if (naj) wybierz(naj);
+});
+cv.style.cursor = 'pointer';
+const kolor = s => s.ziemia ? '#999' : s.alt < 3000 ? '#ff8c00' : s.alt < 8000 ? '#ffe600' : '#50c8ff';
+const strona = k => ['N','NE','E','SE','S','SW','W','NW'][Math.round(k / 45) % 8];
+
+// ---------- dane prosto z serwerow ADS-B ----------
+let zrodla = [
+  { n: 'adsb.fi', url: (la, lo, nm) => `https://opendata.adsb.fi/api/v3/lat/${la}/lon/${lo}/dist/${nm}` },
+  { n: 'adsb.lol', url: (la, lo, nm) => `https://api.adsb.lol/v2/point/${la}/${lo}/${nm}` }
+];
+function odl(la1, lo1, la2, lo2){ const r = Math.PI / 180, x = (lo2 - lo1) * r * Math.cos((la1 + la2) / 2 * r), y = (la2 - la1) * r; return Math.hypot(x, y) * 6371; }
+let pobieram = false;
+async function pobierz(){
+  if (pobieram || document.hidden) return; pobieram = true;
+  const stan = document.getElementById('stan');
+  try {
+    if (ust.sledz) { try { const c = await gps(); ust.lat = +c.latitude.toFixed(4); ust.lon = +c.longitude.toFixed(4); zapiszPamiec(); } catch (e) {} }
+    if (ust.lat == null || ust.lon == null) { stan.textContent = '⚠ ustaw położenie w ⚙ Ustawieniach'; return; }
+    const nm = Math.min(250, Math.ceil(ust.zas / 1.852 * 1.1));
+    let j = null, zr = '', bledy = [];
+    for (const z of zrodla) {
+      try { const r = await fetch(z.url(ust.lat, ust.lon, nm), { cache: 'no-store' });
+        if (!r.ok) { bledy.push(z.n + ' ' + r.status); continue; }
+        j = await r.json(); zr = z.n;
+        if (zrodla[0] !== z) zrodla = [z, ...zrodla.filter(x => x !== z)];   // nastepnym razem najpierw ten, ktory dziala
+        break;
+      } catch (e) { bledy.push(z.n + ' blokuje'); }
+    }
+    if (!j) { stan.textContent = '⚠ brak danych (' + bledy.join(', ') + ')'; return; }
+    const lista = (j.aircraft || j.ac || []).filter(a => typeof a.lat === 'number' && typeof a.lon === 'number').map(a => {
+      const ziemia = a.alt_baro === 'ground';
+      return { lot: (a.flight || a.r || a.hex || '').trim(), hex: (a.hex || '').toLowerCase(), typ: a.t || '', rej: a.r || '', lat: a.lat, lon: a.lon,
+               alt: ziemia ? 0 : Math.round((+a.alt_baro || +a.alt_geom || 0) * 0.3048), ziemia, kmh: Math.round((a.gs || 0) * 1.852),
+               kurs: Math.round(a.track ?? a.true_heading ?? 0), km: odl(ust.lat, ust.lon, a.lat, a.lon) };
+    }).filter(s => s.km <= ust.zas * 1.1).sort((a, b) => a.km - b.km);
+    dane = { lat: ust.lat, lon: ust.lon, zasieg: ust.zas, obrot: ust.obr, samoloty: lista };
+    dane.samoloty.forEach(scal); czasDanych = performance.now();
+    document.getElementById('ile').textContent = dane.samoloty.length + ' samolotów';
+    stan.textContent = 'zasięg ' + ust.zas + ' km · ' + zr;
+    document.getElementById('lista').innerHTML = dane.samoloty.map(s =>
+      `<tr data-hex="${s.hex}" onclick="wybierz('${s.hex}')"><td><span class="kr" style="background:${kolor(s)}"></span><a>${s.lot}</a></td>
+       <td title="${nazwaTypu(s.typ, s)}">${s.typ || ''}</td><td>${s.ziemia ? 'na ziemi' : s.alt.toLocaleString('pl') + ' m'}</td><td>${s.kmh} km/h</td><td>${s.kurs}° ${strona(s.kurs)}</td><td>${s.km.toFixed(1).replace('.', ',')} km</td></tr>`).join('');
+    pokazSzczegoly();
+  } finally { pobieram = false; }
+}
+function rysuj(){
+  const W = cv.width, C = W / 2, R = W / 2 - 14;
+  cx.fillStyle = '#04100a'; cx.fillRect(0, 0, W, W);
+  // smuga
+  for (let i = 30; i >= 0; i--){ const a1 = (kat - i * 1.5) * Math.PI / 180 - Math.PI / 2, a2 = a1 - 1.6 * Math.PI / 180;
+    cx.fillStyle = `rgba(30,220,110,${0.22 * (1 - i / 31)})`; cx.beginPath(); cx.moveTo(C, C); cx.arc(C, C, R, a2, a1); cx.closePath(); cx.fill(); }
+  cx.strokeStyle = '#1d6b3f'; cx.lineWidth = 2;
+  for (let i = 1; i <= 3; i++){ cx.beginPath(); cx.arc(C, C, R * i / 3, 0, 7); cx.stroke(); }
+  cx.beginPath(); cx.moveTo(C - R, C); cx.lineTo(C + R, C); cx.moveTo(C, C - R); cx.lineTo(C, C + R); cx.stroke();
+  const a = kat * Math.PI / 180 - Math.PI / 2; cx.strokeStyle = '#8affb8'; cx.lineWidth = 3; cx.beginPath(); cx.moveTo(C, C); cx.lineTo(C + R * Math.cos(a), C + R * Math.sin(a)); cx.stroke();
+  const ob = (obracaj && dane && dane.obrot ? dane.obrot : 0) * Math.PI / 180, co = Math.cos(ob), so = Math.sin(ob);
+  cx.font = 'bold 22px Segoe UI, Arial'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+  ['N', 'E', 'S', 'W'].forEach((t, i) => { const b = i * Math.PI / 2 - ob; cx.fillStyle = i ? '#2a8a55' : '#ff5a5a';
+    cx.fillText(t, C + (R - 16) * Math.sin(b), C - (R - 16) * Math.cos(b)); });
+  cx.textBaseline = 'alphabetic';
+  if (dane){
+    cx.font = '18px Segoe UI, Arial'; cx.textAlign = 'left';
+    for (let i = 1; i <= 3; i++) cx.fillText(Math.round(dane.zasieg * i / 3) + ' km', C + 6, C - R * i / 3 + 22);
+    pozycje = [];
+    const sk = R / dane.zasieg, dt = Math.min(performance.now() - czasDanych, 60000) / 3600000, cosL = Math.cos(dane.lat * Math.PI / 180);
+    for (const s of dane.samoloty){
+      const k0 = s.kurs * Math.PI / 180, d = s.ziemia ? 0 : s.kmh * dt;
+      const x0 = (s.lon - dane.lon) * 111.32 * cosL + d * Math.sin(k0), y0 = (s.lat - dane.lat) * 110.574 + d * Math.cos(k0);
+      const x = x0 * co - y0 * so, y = y0 * co + x0 * so, kr = k0 - ob;
+      const px = C + x * sk, py = C - y * sk; if (Math.hypot(px - C, py - C) > R - 4) continue;
+      pozycje.push({ x: px, y: py, hex: s.hex });
+      if (s.hex === wybrany){ cx.strokeStyle = '#fff'; cx.lineWidth = 2; cx.beginPath(); cx.arc(px, py, 20, 0, 7); cx.stroke(); }
+      cx.save(); cx.translate(px, py); cx.rotate(kr); cx.fillStyle = kolor(s);
+      cx.beginPath(); cx.moveTo(0, -14); cx.lineTo(8, 9); cx.lineTo(0, 4); cx.lineTo(-8, 9); cx.closePath(); cx.fill(); cx.restore();
+      cx.fillStyle = kolor(s); cx.font = 'bold 17px Segoe UI, Arial'; cx.fillText(s.lot, px + 12, py + 6);
+      cx.fillStyle = '#9fb7aa'; cx.font = '14px Segoe UI, Arial'; cx.fillText(s.ziemia ? 'ziemia' : Math.round(s.alt / 100) / 10 + ' km', px + 12, py + 22);
+    }
+  }
+  cx.fillStyle = '#fff'; cx.fillRect(C - 7, C - 1.5, 14, 3); cx.fillRect(C - 1.5, C - 7, 3, 14);
+  kat = (kat + 1.5) % 360; requestAnimationFrame(rysuj);
+}
+
+opisObrotu();
+(async () => { await zaladujFolder(); wczytajMoje(); })();
+if (ust.lat == null) otworzUst();
+pobierz(); setInterval(pobierz, 10000); rysuj();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) pobierz(); });
+</script>
+</body>
+</html>
